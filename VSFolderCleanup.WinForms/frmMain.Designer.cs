@@ -99,6 +99,7 @@
             this.btnDeleteAll.TabIndex = 5;
             this.btnDeleteAll.Text = "Delete Folders";
             this.btnDeleteAll.UseVisualStyleBackColor = true;
+            this.btnDeleteAll.Click += new System.EventHandler(this.btnDeleteAll_Click);
             // 
             // frmMain
             // 
