@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 using VSFolderCleanup.Extensions;
 using VSFolderCleanup.Models;
@@ -22,23 +24,35 @@ namespace VSFolderCleanup
                 List<FolderItem> folders = new List<FolderItem>();
                 FileSystem.EnumFiles(e.Result, "*", directoryFound: (dir) =>
                 {
-                    if (dir.Name.Equals("packages") || dir.FullName.ContainsAny("bin\\Debug", "bin\\Release", "obj\\Debug", "obj\\Release"))
+                    if (dir.Name.Equals("packages") || dir.FullName.ContainsAny("bin\\Debug", "bin\\Release", "obj\\Debug", "obj\\Release", "\\bin"))
                     {
-                        if (DateTime.Now.Subtract(dir.LastWriteTimeUtc).TotalDays > 360)
+                        DateTime lastUpdated = GetMaxUpdateDate(dir);
+                        if (DateTime.Now.Subtract(lastUpdated).TotalDays > 180)
                         {                            
                             folders.Add(new FolderItem() 
                             { 
                                 FullPath = dir.FullName, 
                                 DisplayPath = dir.FullName.Substring(e.Result.Length + 1) 
                             });
-                        }
-                        return EnumFileResult.NextFolder;
+                        }                        
                     }                    
 
                     return EnumFileResult.Continue;
                 });
 
                 foreach (var item in folders) lbFolders.Items.Add(item);
+            }
+        }
+
+        private DateTime GetMaxUpdateDate(DirectoryInfo dir)
+        {
+            try
+            {
+                return dir.GetFiles().Max(fi => fi.LastWriteTimeUtc);
+            }
+            catch 
+            {
+                return dir.LastWriteTimeUtc;
             }
         }
 
@@ -74,7 +88,10 @@ namespace VSFolderCleanup
                     {
                         try
                         {
-                            Microsoft.VisualBasic.FileIO.FileSystem.DeleteDirectory(folderItem.FullPath, Microsoft.VisualBasic.FileIO.DeleteDirectoryOption.DeleteAllContents);
+                            if (Directory.Exists(folderItem.FullPath))
+                            {
+                                Microsoft.VisualBasic.FileIO.FileSystem.DeleteDirectory(folderItem.FullPath, Microsoft.VisualBasic.FileIO.DeleteDirectoryOption.DeleteAllContents);
+                            }                            
                         }
                         catch (Exception exc)
                         {
@@ -85,6 +102,8 @@ namespace VSFolderCleanup
                         }
                     }
                 }
+                MessageBox.Show("Folders deleted.");
+                Close();
             }
             catch (Exception exc)
             {
